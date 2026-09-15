@@ -6,5 +6,5 @@ def display_menu():
     print("4. Search for a book")
     print("5. Exit")
 
-
-display_menu()
+if __name__ == "__main__":
+    display_menu()
