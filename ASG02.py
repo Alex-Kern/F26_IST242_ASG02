@@ -18,8 +18,20 @@ def view_books(library):
     for index, title in enumerate(library, start=1):
         print(f"{index}. {title}")
 
+
+def add_book(library):
+    """Prompts for a book title and appends it to the library list."""
+    title = input("Enter book title: ").strip()
+    if not title:
+        print("Title cannot be empty.")
+        return
+
+    library.append(title)
+    print(f"'{title}' has been added to your library.")
+
 if __name__ == "__main__":
+    library = []
+
     display_menu()
-    sample_library = ["The Hobbit", "1984", "To Kill a Mockingbird"]
-    view_books(sample_library)
-    view_books([])
+    add_book(library)
+    view_books(library)
