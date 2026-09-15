@@ -1,5 +1,5 @@
 def display_menu():
-    print("\n=== Personal Library Manager ===")
+    print("=== Personal Library Manager ===")
     print("1. View all books")
     print("2. Add a book")
     print("3. Remove a book")
