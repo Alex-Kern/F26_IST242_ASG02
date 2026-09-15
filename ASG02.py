@@ -1,3 +1,6 @@
+#test
+print("Hello, World!")
+
 def display_menu():
     print("=== Personal Library Manager ===")
     print("1. View all books")
