@@ -46,6 +46,31 @@ def remove_book(library):
     else:
         print(f"'{title}' was not found in the library.")
 
+
+
+def main():
+    """Orchestrates the interactive menu loop for Layer 1."""
+    library = []
+
+    while True:
+        display_menu()
+        choice = input("\nEnter your choice (1-5): ").strip()
+
+        if choice == "1":
+            view_books(library)
+        elif choice == "2":
+            add_book(library)
+        elif choice == "3":
+            remove_book(library)
+        elif choice == "4":
+            search_books(library)
+        elif choice == "5":
+            print("Exiting Personal Library Manager. Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please choose a number between 1 and 5.")
+
+
 if __name__ == "__main__":
     library = []
 
@@ -53,3 +78,4 @@ if __name__ == "__main__":
     add_book(library)
     view_books(library)
     remove_book(library)
+    main()
