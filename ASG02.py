@@ -47,6 +47,28 @@ def remove_book(library):
         print(f"'{title}' was not found in the library.")
 
 
+def search_books(library):
+    """Searches for books by partial, case-insensitive title match."""
+    if not library:
+        print("Your library is empty.")
+        return
+
+    keyword = input("Enter search term: ").strip().lower()
+    if not keyword:
+        print("Search term cannot be empty.")
+        return
+
+    # Find matching books using case-insensitive partial matching
+    matches = [book for book in library if keyword in book.lower()]
+
+    if matches:
+        print("--- Matching Books ---")
+        for index, title in enumerate(matches, start=1):
+            print(f"{index}. {title}")
+    else:
+        print(f"No books found matching '{keyword}'.")
+
+
 
 def main():
     """Orchestrates the interactive menu loop for Layer 1."""
@@ -72,10 +94,4 @@ def main():
 
 
 if __name__ == "__main__":
-    library = []
-
-    display_menu()
-    add_book(library)
-    view_books(library)
-    remove_book(library)
     main()
