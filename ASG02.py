@@ -1,3 +1,5 @@
+
+
 def display_menu():
     """"Displays the main menu options for the Personal Library Manager."""
     print("=== Personal Library Manager ===")
@@ -29,9 +31,25 @@ def add_book(library):
     library.append(title)
     print(f"'{title}' has been added to your library.")
 
+
+def remove_book(library):
+    """Prompts for a book title and removes it from the library list."""
+    if not library:
+        print("Your library is empty. Nothing to remove.")
+        return
+
+    title = input("Enter the title of the book to remove: ").strip()
+
+    if title in library:
+        library.remove(title)
+        print(f"'{title}' has been removed from your library.")
+    else:
+        print(f"'{title}' was not found in the library.")
+
 if __name__ == "__main__":
     library = []
 
     display_menu()
     add_book(library)
     view_books(library)
+    remove_book(library)
