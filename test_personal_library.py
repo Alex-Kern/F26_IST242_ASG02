@@ -1,7 +1,7 @@
 # virtual environment
 # multiple projects -> different versions of libraries
 import pytest
-from ASG02 import view_books, add_book, remove_book
+from ASG02 import view_books, add_book, remove_book, search_books
 
 
 def test_view_books_empty(capsys):
@@ -81,3 +81,37 @@ def test_remove_book_empty_library(capsys):
 
     captured = capsys.readouterr()
     assert "Your library is empty. Nothing to remove." in captured.out
+
+
+def test_search_books_found(monkeypatch, capsys):
+    """Test case-insensitive partial title matching."""
+    library = ["The Hobbit", "Dune", "Dune Messiah"]
+    # Search with lowercase partial word "dune"
+    monkeypatch.setattr("builtins.input", lambda _: "dune")
+
+    search_books(library)
+
+    captured = capsys.readouterr()
+    assert "1. Dune" in captured.out
+    assert "2. Dune Messiah" in captured.out
+    assert "The Hobbit" not in captured.out
+
+
+def test_search_books_not_found(monkeypatch, capsys):
+    """Test search with no matching titles displays clear message."""
+    library = ["The Hobbit", "1984"]
+    monkeypatch.setattr("builtins.input", lambda _: "Foundation")
+
+    search_books(library)
+
+    captured = capsys.readouterr()
+    assert "No books found matching 'foundation'." in captured.out
+
+
+def test_search_books_empty_library(capsys):
+    """Test searching an empty library alerts the user immediately."""
+    library = []
+    search_books(library)
+
+    captured = capsys.readouterr()
+    assert "Your library is empty." in captured.out
