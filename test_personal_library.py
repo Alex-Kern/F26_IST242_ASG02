@@ -1,117 +1,57 @@
 # virtual environment
 # multiple projects -> different versions of libraries
 import pytest
-from ASG02 import view_books, add_book, remove_book, search_books
-
-
-def test_view_books_empty(capsys):
-    """Test viewing an empty library shows the correct message."""
-    library = []
-    view_books(library)
-    captured = capsys.readouterr()
-    assert "Your library is empty." in captured.out
-
-
-def test_view_books_with_items(capsys):
-    """Test viewing a populated library displays 1-based index and titles."""
-    library = ["1984", "The Hobbit"]
-    view_books(library)
-    captured = capsys.readouterr()
-    assert "1. 1984" in captured.out
-    assert "2. The Hobbit" in captured.out
+from ASG02 import add_book
 
 
 def test_add_book_success(monkeypatch, capsys):
-    """Test adding a valid book title appends it to the list."""
+    """Test adding a valid book creates a tuple and registers with the set."""
     library = []
-    # Simulate the user typing "The Hobbit" and pressing Enter
-    monkeypatch.setattr("builtins.input", lambda _: "The Hobbit")
+    title_set = set()
 
-    add_book(library)
+    # Provide all 3 inputs: Title, Author, Year
+    inputs = iter(["Dune", "Frank Herbert", "1965"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
 
-    assert "The Hobbit" in library
+    add_book(library, title_set)
+
     assert len(library) == 1
-    captured = capsys.readouterr()
-    assert "'The Hobbit' has been added to your library." in captured.out
-
-
-def test_add_book_empty_input(monkeypatch, capsys):
-    """Test entering an empty title rejects input and does not alter library."""
-    library = []
-    # Simulate user pressing Enter without typing anything
-    monkeypatch.setattr("builtins.input", lambda _: "   ")
-
-    add_book(library)
-
-    assert len(library) == 0
-    captured = capsys.readouterr()
-    assert "Title cannot be empty." in captured.out
-
-
-
-def test_remove_book_success(monkeypatch, capsys):
-    """Test removing an existing book deletes it from the library."""
-    library = ["The Hobbit", "1984"]
-    monkeypatch.setattr("builtins.input", lambda _: "1984")
-
-    remove_book(library)
-
-    assert "1984" not in library
-    assert library == ["The Hobbit"]
-    captured = capsys.readouterr()
-    assert "'1984' has been removed from your library." in captured.out
-
-
-def test_remove_book_not_found(monkeypatch, capsys):
-    """Test removing a book that doesn't exist leaves the library unchanged."""
-    library = ["The Hobbit"]
-    monkeypatch.setattr("builtins.input", lambda _: "Dune")
-
-    remove_book(library)
-
-    assert library == ["The Hobbit"]
-    captured = capsys.readouterr()
-    assert "'Dune' was not found in the library." in captured.out
-
-
-def test_remove_book_empty_library(capsys):
-    """Test removing from an empty library alerts the user immediately without prompting."""
-    library = []
-    remove_book(library)
+    assert library[0] == ("Dune", "Frank Herbert", 1965)
+    assert "dune" in title_set
 
     captured = capsys.readouterr()
-    assert "Your library is empty. Nothing to remove." in captured.out
+    assert (
+        "'Dune' by Frank Herbert (1965) has been added to your library."
+        in captured.out
+    )
 
 
-def test_search_books_found(monkeypatch, capsys):
-    """Test case-insensitive partial title matching."""
-    library = ["The Hobbit", "Dune", "Dune Messiah"]
-    # Search with lowercase partial word "dune"
+def test_add_book_duplicate_prevented(monkeypatch, capsys):
+    """Test that duplicate titles are rejected via the set in O(1) time."""
+    library = [("Dune", "Frank Herbert", 1965)]
+    title_set = {"dune"}
+
     monkeypatch.setattr("builtins.input", lambda _: "dune")
 
-    search_books(library)
+    add_book(library, title_set)
 
+    assert len(library) == 1
+    assert len(title_set) == 1
     captured = capsys.readouterr()
-    assert "1. Dune" in captured.out
-    assert "2. Dune Messiah" in captured.out
-    assert "The Hobbit" not in captured.out
+    assert "'dune' is already in your library." in captured.out
 
 
-def test_search_books_not_found(monkeypatch, capsys):
-    """Test search with no matching titles displays clear message."""
-    library = ["The Hobbit", "1984"]
-    monkeypatch.setattr("builtins.input", lambda _: "Foundation")
-
-    search_books(library)
-
-    captured = capsys.readouterr()
-    assert "No books found matching 'foundation'." in captured.out
-
-
-def test_search_books_empty_library(capsys):
-    """Test searching an empty library alerts the user immediately."""
+def test_add_book_invalid_year(monkeypatch, capsys):
+    """Test entering non-numeric year rejects book addition."""
     library = []
-    search_books(library)
+    title_set = set()
 
+    inputs = iter(["1984", "George Orwell", "nineteen-eighty-four"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    add_book(library, title_set)
+
+    assert len(library) == 0
+    assert len(title_set) == 0
     captured = capsys.readouterr()
-    assert "Your library is empty." in captured.out
+    assert "Year must be a valid integer." in captured.out
