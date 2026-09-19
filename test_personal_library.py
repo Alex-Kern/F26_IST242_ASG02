@@ -1,7 +1,7 @@
 # virtual environment
 # multiple projects -> different versions of libraries
 import pytest
-from ASG02 import view_books
+from ASG02 import view_books, add_book
 
 
 def test_view_books_empty(capsys):
@@ -19,3 +19,30 @@ def test_view_books_with_items(capsys):
     captured = capsys.readouterr()
     assert "1. 1984" in captured.out
     assert "2. The Hobbit" in captured.out
+
+
+def test_add_book_success(monkeypatch, capsys):
+    """Test adding a valid book title appends it to the list."""
+    library = []
+    # Simulate the user typing "The Hobbit" and pressing Enter
+    monkeypatch.setattr("builtins.input", lambda _: "The Hobbit")
+
+    add_book(library)
+
+    assert "The Hobbit" in library
+    assert len(library) == 1
+    captured = capsys.readouterr()
+    assert "'The Hobbit' has been added to your library." in captured.out
+
+
+def test_add_book_empty_input(monkeypatch, capsys):
+    """Test entering an empty title rejects input and does not alter library."""
+    library = []
+    # Simulate user pressing Enter without typing anything
+    monkeypatch.setattr("builtins.input", lambda _: "   ")
+
+    add_book(library)
+
+    assert len(library) == 0
+    captured = capsys.readouterr()
+    assert "Title cannot be empty." in captured.out
