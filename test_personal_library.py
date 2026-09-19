@@ -1,7 +1,7 @@
 # virtual environment
 # multiple projects -> different versions of libraries
 import pytest
-from ASG02 import view_books, add_book
+from ASG02 import view_books, add_book, remove_book
 
 
 
@@ -82,3 +82,46 @@ def test_add_book_invalid_year(monkeypatch, capsys):
     assert len(title_set) == 0
     captured = capsys.readouterr()
     assert "Year must be a valid integer." in captured.out
+
+
+def test_remove_book_success(monkeypatch, capsys):
+    """Test removing a book deletes its tuple and clears it from title_set."""
+    library = [("Dune", "Frank Herbert", 1965)]
+    title_set = {"dune"}
+
+    monkeypatch.setattr("builtins.input", lambda _: "Dune")
+
+    remove_book(library, title_set)
+
+    assert len(library) == 0
+    assert "dune" not in title_set
+
+    captured = capsys.readouterr()
+    assert "'Dune' has been removed from your library." in captured.out
+
+
+def test_remove_book_not_found(monkeypatch, capsys):
+    """Test attempting to remove a non-existent title leaves collections unchanged."""
+    library = [("Dune", "Frank Herbert", 1965)]
+    title_set = {"dune"}
+
+    monkeypatch.setattr("builtins.input", lambda _: "Foundation")
+
+    remove_book(library, title_set)
+
+    assert len(library) == 1
+    assert "dune" in title_set
+
+    captured = capsys.readouterr()
+    assert "'Foundation' was not found in the library." in captured.out
+
+
+def test_remove_book_empty_library(capsys):
+    """Test removing from an empty library alerts the user immediately without prompting."""
+    library = []
+    title_set = set()
+
+    remove_book(library, title_set)
+
+    captured = capsys.readouterr()
+    assert "Your library is empty. Nothing to remove." in captured.out
