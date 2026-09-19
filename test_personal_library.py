@@ -1,7 +1,34 @@
 # virtual environment
 # multiple projects -> different versions of libraries
 import pytest
-from ASG02 import add_book
+from ASG02 import view_books, add_book
+
+
+
+def test_view_books_empty(capsys):
+    """Test viewing an empty library shows the correct message."""
+    library = []
+    view_books(library)
+    captured = capsys.readouterr()
+    assert "Your library is empty." in captured.out
+
+
+def test_view_books_sorted_and_formatted(capsys):
+    """Test books are unpacked and displayed alphabetically by title."""
+    library = [
+        ("The Hobbit", "J.R.R. Tolkien", 1937),
+        ("Dune", "Frank Herbert", 1965),
+    ]
+    view_books(library)
+    captured = capsys.readouterr()
+
+    # Dune should come first because of alphabetical sorting
+    expected_dune = "1. Dune by Frank Herbert (1965)"
+    expected_hobbit = "2. The Hobbit by J.R.R. Tolkien (1937)"
+
+    assert expected_dune in captured.out
+    assert expected_hobbit in captured.out
+    assert captured.out.index(expected_dune) < captured.out.index(expected_hobbit)
 
 
 def test_add_book_success(monkeypatch, capsys):
