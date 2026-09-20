@@ -63,18 +63,12 @@ class LibraryManager:
         try:
             with open(self.filename, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                # Check that the loaded JSON is actually a dictionary
                 if isinstance(data, dict):
                     self.books = data
                 else:
                     self.books = {}
         except (json.JSONDecodeError, OSError):
-            self.books = {}
-
-        try:
-            with open(self.filename, "r", encoding="utf-8") as f:
-                self.books = json.load(f)
-        except (json.JSONDecodeError, OSError):
-            print(f"Warning: Could not read '{self.filename}'. Starting with an empty library.")
             self.books = {}
 
     def save_library(self):
