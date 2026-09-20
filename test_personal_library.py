@@ -78,32 +78,30 @@ def test_add_or_update_book_invalid_year(monkeypatch, capsys):
 
 
 def test_remove_book_success(monkeypatch, capsys):
-    """Test removing a book deletes its tuple and clears it from title_set."""
-    library = [("Dune", "Frank Herbert", 1965)]
-    title_set = {"dune"}
+    """Test removing a book deletes its key from the dictionary."""
+    library = {"Dune": {"author": "Frank Herbert", "year": 1965}}
 
     monkeypatch.setattr("builtins.input", lambda _: "Dune")
 
-    remove_book(library, title_set)
+    remove_book(library)
 
+    assert "Dune" not in library
     assert len(library) == 0
-    assert "dune" not in title_set
 
     captured = capsys.readouterr()
     assert "'Dune' has been removed from your library." in captured.out
 
 
 def test_remove_book_not_found(monkeypatch, capsys):
-    """Test attempting to remove a non-existent title leaves collections unchanged."""
-    library = [("Dune", "Frank Herbert", 1965)]
-    title_set = {"dune"}
+    """Test attempting to remove a non-existent title leaves the dictionary unchanged."""
+    library = {"Dune": {"author": "Frank Herbert", "year": 1965}}
 
     monkeypatch.setattr("builtins.input", lambda _: "Foundation")
 
-    remove_book(library, title_set)
+    remove_book(library)
 
+    assert "Dune" in library
     assert len(library) == 1
-    assert "dune" in title_set
 
     captured = capsys.readouterr()
     assert "'Foundation' was not found in the library." in captured.out
@@ -111,10 +109,9 @@ def test_remove_book_not_found(monkeypatch, capsys):
 
 def test_remove_book_empty_library(capsys):
     """Test removing from an empty library alerts the user immediately without prompting."""
-    library = []
-    title_set = set()
+    library = {}
 
-    remove_book(library, title_set)
+    remove_book(library)
 
     captured = capsys.readouterr()
     assert "Your library is empty. Nothing to remove." in captured.out
