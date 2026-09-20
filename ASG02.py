@@ -1,6 +1,79 @@
 import json
 import os
 
+class LibraryManager:
+    """Manages the book collection and business logic."""
+
+    def __init__(self, filename="library_data.json"):
+        self.filename = filename
+        self.books = {}
+        self.load_library()
+
+    def add_or_update_book(self, title: str, author: str, year: int) -> str:
+        """Adds or updates a book entry. Returns 'added' or 'updated'."""
+        status = "updated" if title in self.books else "added"
+        self.books[title] = {"author": author, "year": int(year)}
+        return status
+
+    def remove_book(self, title: str) -> bool:
+        """Removes a book by title (case-insensitive). Returns True if removed, False otherwise."""
+        target_key = None
+        for key in self.books:
+            if key.lower() == title.lower():
+                target_key = key
+                break
+
+        if target_key:
+            del self.books[target_key]
+            return True
+        return False
+
+    def get_all_books(self):
+        """Returns list of (title, info_dict) sorted alphabetically by title."""
+        return sorted(self.books.items(), key=lambda item: item[0].lower())
+
+    def search_books(self, keyword: str):
+        """Returns list of (title, info_dict) matching keyword case-insensitively."""
+        keyword = keyword.lower()
+        return [
+            (title, info)
+            for title, info in self.books.items()
+            if keyword in title.lower()
+        ]
+
+    def get_author_statistics(self):
+        """Calculates book count per author, sorted alphabetically."""
+        counts = {}
+        for info in self.books.values():
+            author = info["author"]
+            counts[author] = counts.get(author, 0) + 1
+        return sorted(counts.items())
+
+    def load_library(self):
+        """Loads data from JSON file into self.books."""
+        if not os.path.exists(self.filename):
+            self.books = {}
+            return
+
+        try:
+            with open(self.filename, "r", encoding="utf-8") as f:
+                self.books = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            print(f"Warning: Could not read '{self.filename}'. Starting with an empty library.")
+            self.books = {}
+
+    def save_library(self):
+        """Saves current collection to JSON file."""
+        try:
+            with open(self.filename, "w", encoding="utf-8") as f:
+                json.dump(self.books, f, indent=4)
+            print(f"Library successfully saved to '{self.filename}'.")
+        except OSError as e:
+            print(f"Error: Failed to save library data: {e}")
+
+
+# --- CLI Presentation Layer ---
+
 def display_menu():
     """Displays the main menu options for the Personal Library Manager."""
     print("=== Personal Library Manager ===")
@@ -12,159 +85,87 @@ def display_menu():
     print("6. Save and exit")
 
 
-def view_books(library):
-    """Displays all books formatted as 'Title by Author (Year)' sorted alphabetically by title."""
-    if not library:
-        print("Your library is empty.")
-        return
-
-    sorted_books = sorted(library.items(), key=lambda item: item[0].lower())
-
-    print("--- Books in Library ---")
-    for index, (title, info) in enumerate(sorted_books, start=1):
-        print(f"{index}. {title} by {info['author']} ({info['year']})")
-
-def add_or_update_book(library):
-    """Prompts for book details and adds or updates the entry in the dictionary."""
-    title = input("Title: ").strip()
-    if not title:
-        print("Title cannot be empty.")
-        return
-
-    author = input("Author: ").strip()
-    if not author:
-        print("Author cannot be empty.")
-        return
-
-    year_str = input("Year: ").strip()
-    if not year_str.isdigit():
-        print("Year must be a valid integer.")
-        return
-    year = int(year_str)
-
-    # Check existence BEFORE assigning so we know if it was added or updated
-    status = "updated" if title in library else "added"
-
-    # Store in nested dictionary
-    library[title] = {"author": author, "year": year}
-
-    print(f'"{title}" was {status}.')
-
-def remove_book(library):
-    """Prompts for title and removes the book from the dictionary."""
-    if not library:
-        print("Your library is empty. Nothing to remove.")
-        return
-
-    title_to_remove = input("Enter the title of the book to remove: ").strip()
-
-    # Find the matching key in the dictionary (case-insensitive)
-    target_key = None
-    for title in library:
-        if title.lower() == title_to_remove.lower():
-            target_key = title
-            break
-
-    if target_key:
-        del library[target_key]
-        print(f"'{target_key}' has been removed from your library.")
-    else:
-        print(f"'{title_to_remove}' was not found in the library.")
-
-
-def search_books(library):
-    """Searches for books by partial, case-insensitive title match."""
-    if not library:
-        print("Your library is empty.")
-        return
-
-    keyword = input("Enter search term: ").strip().lower()
-    if not keyword:
-        print("Search term cannot be empty.")
-        return
-
-    matches = [
-        (title, info)
-        for title, info in library.items()
-        if keyword in title.lower()
-    ]
-
-    if matches:
-        print("--- Matching Books ---")
-        for index, (title, info) in enumerate(matches, start=1):
-            print(f"{index}. {title} by {info['author']} ({info['year']})")
-    else:
-        print(f"No books found matching '{keyword}'.")
-
-
-def show_author_statistics(library):
-    """Displays the count of books written by each author, sorted alphabetically."""
-    if not library:
-        print("Your library is empty.")
-        return
-
-    # Count books per author
-    author_counts = {}
-    for info in library.values():
-        author = info["author"]
-        author_counts[author] = author_counts.get(author, 0) + 1
-
-    print("--- Author Statistics ---")
-    for author, count in sorted(author_counts.items()):
-        unit = "book" if count == 1 else "books"
-        print(f"{author}: {count} {unit}")
-
-
-def load_library(filename="library_data.json"):
-    """Loads library data from a JSON file.
-    Returns an empty dict if the file is missing or corrupted.
-    """
-    if not os.path.exists(filename):
-        return {}
-
-    try:
-        with open(filename, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, OSError):
-        print(f"Warning: Could not read '{filename}'. Starting with an empty library.")
-        return {}
-
-
-def save_library(library, filename="library_data.json"):
-    """Saves library dictionary to a JSON file."""
-    try:
-        with open(filename, "w", encoding="utf-8") as f:
-            json.dump(library, f, indent=4)
-        print(f"Library successfully saved to '{filename}'.")
-    except OSError as e:
-        print(f"Error: Failed to save library data: {e}")
-
-
 def main():
-    """Orchestrates the interactive menu loop for Layer 3."""
-    filename = "library_data.json"
-    library = load_library(filename)
+    manager = LibraryManager("library_data.json")
 
     while True:
         display_menu()
-        choice = input("\nEnter your choice (1-6): ").strip()
+        choice = input("Enter your choice (1-6): ").strip()
 
         if choice == "1":
-            view_books(library)
+            books = manager.get_all_books()
+            if not books:
+                print("Your library is empty.")
+            else:
+                print("--- Books in Library ---")
+                for index, (title, info) in enumerate(books, start=1):
+                    print(f"{index}. {title} by {info['author']} ({info['year']})")
+
         elif choice == "2":
-            add_or_update_book(library)
+            title = input("Title: ").strip()
+            if not title:
+                print("Title cannot be empty.")
+                continue
+
+            author = input("Author: ").strip()
+            if not author:
+                print("Author cannot be empty.")
+                continue
+
+            year_str = input("Year: ").strip()
+            if not year_str.isdigit():
+                print("Year must be a valid integer.")
+                continue
+
+            action = manager.add_or_update_book(title, author, int(year_str))
+            print(f'"{title}" was {action}.')
+
         elif choice == "3":
-            remove_book(library)
+            if not manager.books:
+                print("Your library is empty. Nothing to remove.")
+                continue
+
+            title = input("Enter the title of the book to remove: ").strip()
+            if manager.remove_book(title):
+                print(f"'{title}' has been removed from your library.")
+            else:
+                print(f"'{title}' was not found in the library.")
+
         elif choice == "4":
-            search_books(library)
+            if not manager.books:
+                print("Your library is empty.")
+                continue
+
+            keyword = input("Enter search term: ").strip()
+            if not keyword:
+                print("Search term cannot be empty.")
+                continue
+
+            matches = manager.search_books(keyword)
+            if matches:
+                print("--- Matching Books ---")
+                for index, (title, info) in enumerate(matches, start=1):
+                    print(f"{index}. {title} by {info['author']} ({info['year']})")
+            else:
+                print(f"No books found matching '{keyword}'.")
+
         elif choice == "5":
-            show_author_statistics(library)
+            stats = manager.get_author_statistics()
+            if not stats:
+                print("Your library is empty.")
+            else:
+                print("--- Author Statistics ---")
+                for author, count in stats:
+                    unit = "book" if count == 1 else "books"
+                    print(f"{author}: {count} {unit}")
+
         elif choice == "6":
-            save_library(library, filename)
+            manager.save_library()
             print("Exiting Personal Library Manager. Goodbye!")
             break
         else:
             print("Invalid choice. Please choose a number between 1 and 6.")
+
 
 if __name__ == "__main__":
     main()
