@@ -30,55 +30,49 @@ def test_view_books_sorted_and_formatted(capsys):
     assert captured.out.index(expected_dune) < captured.out.index(expected_hobbit)
 
 
-def test_add_book_success(monkeypatch, capsys):
-    """Test adding a valid book creates a tuple and registers with the set."""
-    library = []
-    title_set = set()
+def test_add_or_update_book_add_new(monkeypatch, capsys):
+    """Test adding a new book inserts it into the dictionary and reports added."""
+    library = {}
 
-    # Provide all 3 inputs: Title, Author, Year
     inputs = iter(["Dune", "Frank Herbert", "1965"])
     monkeypatch.setattr("builtins.input", lambda _: next(inputs))
 
-    add_book(library, title_set)
+    add_or_update_book(library)
 
-    assert len(library) == 1
-    assert library[0] == ("Dune", "Frank Herbert", 1965)
-    assert "dune" in title_set
+    assert "Dune" in library
+    assert library["Dune"] == {"author": "Frank Herbert", "year": 1965}
 
     captured = capsys.readouterr()
-    assert (
-        "'Dune' by Frank Herbert (1965) has been added to your library."
-        in captured.out
-    )
+    assert '"Dune" was added.' in captured.out
 
 
-def test_add_book_duplicate_prevented(monkeypatch, capsys):
-    """Test that duplicate titles are rejected via the set in O(1) time."""
-    library = [("Dune", "Frank Herbert", 1965)]
-    title_set = {"dune"}
+def test_add_or_update_book_update_existing(monkeypatch, capsys):
+    """Test entering an existing title updates its details and reports updated."""
+    library = {"Dune": {"author": "Frank Herbert", "year": 1965}}
 
-    monkeypatch.setattr("builtins.input", lambda _: "dune")
+    # Provide updated author/year for the existing title
+    inputs = iter(["Dune", "F. Herbert", "1966"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
 
-    add_book(library, title_set)
+    add_or_update_book(library)
 
     assert len(library) == 1
-    assert len(title_set) == 1
+    assert library["Dune"] == {"author": "F. Herbert", "year": 1966}
+
     captured = capsys.readouterr()
-    assert "'dune' is already in your library." in captured.out
+    assert '"Dune" was updated.' in captured.out
 
 
-def test_add_book_invalid_year(monkeypatch, capsys):
-    """Test entering non-numeric year rejects book addition."""
-    library = []
-    title_set = set()
+def test_add_or_update_book_invalid_year(monkeypatch, capsys):
+    """Test entering non-numeric year rejects input without altering the dictionary."""
+    library = {}
 
     inputs = iter(["1984", "George Orwell", "nineteen-eighty-four"])
     monkeypatch.setattr("builtins.input", lambda _: next(inputs))
 
-    add_book(library, title_set)
+    add_or_update_book(library)
 
     assert len(library) == 0
-    assert len(title_set) == 0
     captured = capsys.readouterr()
     assert "Year must be a valid integer." in captured.out
 
