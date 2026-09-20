@@ -1,7 +1,7 @@
 # virtual environment
 # multiple projects -> different versions of libraries
 import pytest
-from ASG02 import view_books, add_or_update_book, remove_book, search_books, show_author_statistics
+from ASG02 import view_books, add_or_update_book, remove_book, search_books, show_author_statistics, load_library, save_library
 
 
 def test_view_books_empty(capsys):
@@ -184,3 +184,52 @@ def test_show_author_statistics_counts_and_sorting(capsys):
     assert captured.out.index(expected_herbert) < captured.out.index(
         expected_tolkien
     )
+
+
+def test_load_library_file_not_found(tmp_path):
+    """Test loading from a non-existent path returns an empty dictionary without crashing."""
+    fake_path = tmp_path / "non_existent.json"
+    result = load_library(str(fake_path))
+    assert result == {}
+
+
+def test_load_library_corrupted_json(tmp_path, capsys):
+    """Test loading corrupted/invalid JSON falls back gracefully to an empty dictionary."""
+    corrupt_file = tmp_path / "corrupt.json"
+    corrupt_file.write_text("{this is not valid json")
+
+    result = load_library(str(corrupt_file))
+    assert result == {}
+
+    captured = capsys.readouterr()
+    assert "Warning: Could not read" in captured.out
+
+
+def test_save_library_creates_valid_json(tmp_path):
+    """Test save_library properly serializes dictionary data into a readable JSON file."""
+    library_data = {
+        "Dune": {"author": "Frank Herbert", "year": 1965}
+    }
+    file_path = tmp_path / "saved_library.json"
+
+    save_library(library_data, str(file_path))
+
+    # Verify the file was created and contains valid data
+    assert file_path.exists()
+    loaded_data = load_library(str(file_path))
+    assert loaded_data == library_data
+
+
+def test_persistence_roundtrip(tmp_path):
+    """Test saving and then re-loading data preserves the exact structure and values."""
+    file_path = tmp_path / "test_shelf.json"
+    sample_data = {
+        "1984": {"author": "George Orwell", "year": 1949},
+        "Foundation": {"author": "Isaac Asimov", "year": 1951},
+    }
+
+    save_library(sample_data, str(file_path))
+    restored = load_library(str(file_path))
+
+    assert restored == sample_data
+    assert restored["1984"]["year"] == 1949
