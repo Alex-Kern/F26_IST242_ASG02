@@ -96,11 +96,11 @@ def render_book_list(books):
 # --- CLI Presentation Layer ---
 
 def display_menu():
-    """Displays the main menu options for the Personal Library Manager."""
-    print("=== Personal Library Manager ===")
-    print("1. View all books")
-    print("2. Add or update a book")
-    print("3. Remove a book")
+    """Displays the main menu options matching the assignment specification."""
+    print("===== Personal Library Manager =====")
+    print("1. Add or update a book")
+    print("2. Remove a book")
+    print("3. List all books")
     print("4. Search for a book")
     print("5. Show author statistics")
     print("6. Save and exit")
@@ -109,24 +109,15 @@ def display_menu():
 def main():
     manager = LibraryManager("library_data.json")
     
-    # Report initial load status with correct singular/plural phrasing
     count = len(manager.books)
     unit = "book" if count == 1 else "books"
     print(f"Loaded {count} {unit} from {manager.filename}.")
 
     while True:
         display_menu()
-        choice = input("Enter your choice (1-6): ").strip()
+        choice = input("Choose an option (1-6): ").strip()
 
         if choice == "1":
-            books = manager.get_all_books()
-            if not books:
-                print("Your library is empty.")
-            else:
-                print("--- Books in Library ---")
-                render_book_list(books)
-
-        elif choice == "2":
             title = input("Title: ").strip()
             if not title:
                 print("Title cannot be empty.")
@@ -145,60 +136,52 @@ def main():
             action = manager.add_or_update_book(title, author, int(year_str))
             print(f'"{title}" was {action}.')
 
-        elif choice == "3":
+        elif choice == "2":
             if not manager.books:
                 print("Your library is empty. Nothing to remove.")
                 continue
 
             title = input("Enter the title of the book to remove: ").strip()
             if manager.remove_book(title):
-                print(f"'{title}' has been removed from your library.")
+                print(f"'{title}' was removed.")
             else:
                 print(f"'{title}' was not found in the library.")
+
+        elif choice == "3":
+            books = manager.get_all_books()
+            if not books:
+                print("Your library is empty.")
+            else:
+                render_book_list(books)
 
         elif choice == "4":
             if not manager.books:
                 print("Your library is empty.")
                 continue
 
-            keyword = input("Enter search term: ").strip()
+            keyword = input("Search keyword: ").strip()
             if not keyword:
                 print("Search term cannot be empty.")
                 continue
 
             matches = manager.search_books(keyword)
             if matches:
-                print("--- Matching Books ---")
                 render_book_list(matches)
             else:
-                print(f"No books found matching '{keyword}'.")
-
-            keyword = input("Enter search term: ").strip()
-            if not keyword:
-                print("Search term cannot be empty.")
-                continue
-
-            matches = manager.search_books(keyword)
-            if matches:
-                print("--- Matching Books ---")
-                for index, (title, info) in enumerate(matches, start=1):
-                    print(f"{index}. {title} by {info['author']} ({info['year']})")
-            else:
-                print(f"No books found matching '{keyword}'.")
+                print("No matching books were found.")
 
         elif choice == "5":
             stats = manager.get_author_statistics()
             if not stats:
                 print("Your library is empty.")
             else:
-                print("--- Author Statistics ---")
+                print("Books per author:")
                 for author, count in stats:
-                    unit = "book" if count == 1 else "books"
-                    print(f"{author}: {count} {unit}")
+                    print(f"{author}: {count}")
 
         elif choice == "6":
             manager.save_library()
-            print("Exiting Personal Library Manager. Goodbye!")
+            print(f"Library saved to {manager.filename}. Goodbye!")
             break
         else:
             print("Invalid choice. Please choose a number between 1 and 6.")
