@@ -1,28 +1,27 @@
 # virtual environment
 # multiple projects -> different versions of libraries
 import pytest
-from ASG02 import view_books, add_book, remove_book, search_books
-
+from ASG02 import view_books, add_or_update_book, remove_book, search_books
 
 
 def test_view_books_empty(capsys):
     """Test viewing an empty library shows the correct message."""
-    library = []
+    library = {}
     view_books(library)
     captured = capsys.readouterr()
     assert "Your library is empty." in captured.out
 
 
 def test_view_books_sorted_and_formatted(capsys):
-    """Test books are unpacked and displayed alphabetically by title."""
-    library = [
-        ("The Hobbit", "J.R.R. Tolkien", 1937),
-        ("Dune", "Frank Herbert", 1965),
-    ]
+    """Test books are formatted and displayed alphabetically by title from the dictionary."""
+    library = {
+        "The Hobbit": {"author": "J.R.R. Tolkien", "year": 1937},
+        "Dune": {"author": "Frank Herbert", "year": 1965},
+    }
     view_books(library)
     captured = capsys.readouterr()
 
-    # Dune should come first because of alphabetical sorting
+    # Dune should appear before The Hobbit due to alphabetical sorting
     expected_dune = "1. Dune by Frank Herbert (1965)"
     expected_hobbit = "2. The Hobbit by J.R.R. Tolkien (1937)"
 
