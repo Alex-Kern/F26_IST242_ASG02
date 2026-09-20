@@ -24,38 +24,33 @@ def view_books(library):
         print(f"{index}. {title} by {author} ({year})")
 
 
-def add_book(library, title_set):
-    """Prompts for title, author, and year, stores book as a tuple, and prevents duplicates via a set."""
-    title = input("Enter book title: ").strip()
+def add_or_update_book(library):
+    """Prompts for book details and adds or updates the entry in the dictionary."""
+    title = input("Title: ").strip()
     if not title:
         print("Title cannot be empty.")
         return
 
-    # Layer 2: Constant time O(1) duplicate check
-    if title.lower() in title_set:
-        print(f"'{title}' is already in your library.")
-        return
-
-    author = input("Enter author: ").strip()
+    author = input("Author: ").strip()
     if not author:
         print("Author cannot be empty.")
         return
 
-    year_str = input("Enter publication year: ").strip()
+    year_str = input("Year: ").strip()
     if not year_str.isdigit():
         print("Year must be a valid integer.")
         return
     year = int(year_str)
 
-    # Layer 2: Store record as immutable tuple
-    book = (title, author, year)
-    library.append(book)
-    title_set.add(title.lower())
+    # Check existence BEFORE assigning so we know if it was added or updated
+    status = "updated" if title in library else "added"
 
-    print(f"'{title}' by {author} ({year}) has been added to your library.")
+    # Store in nested dictionary
+    library[title] = {"author": author, "year": year}
 
+    print(f'"{title}" was {status}.')
 
-def remove_book(library, title_set):
+def remove_book(library):
     """Prompts for title and removes matching tuple from library list and title_set."""
     if not library:
         print("Your library is empty. Nothing to remove.")
@@ -102,7 +97,7 @@ def search_books(library):
 
 def main():
     """Orchestrates the interactive menu loop for Layer 2."""
-    library = []
+    library = {}
     title_set = set()
 
     while True:
@@ -112,7 +107,7 @@ def main():
         if choice == "1":
             view_books(library)
         elif choice == "2":
-            add_book(library, title_set)
+            add_or_update_book(library)
         elif choice == "3":
             remove_book(library, title_set)
         elif choice == "4":
