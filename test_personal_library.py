@@ -118,12 +118,12 @@ def test_remove_book_empty_library(capsys):
 
 
 def test_search_books_partial_match(monkeypatch, capsys):
-    """Test case-insensitive partial matching across tuple titles."""
-    library = [
-        ("Dune", "Frank Herbert", 1965),
-        ("Dune Messiah", "Frank Herbert", 1969),
-        ("The Hobbit", "J.R.R. Tolkien", 1937),
-    ]
+    """Test case-insensitive partial matching across dictionary keys."""
+    library = {
+        "Dune": {"author": "Frank Herbert", "year": 1965},
+        "Dune Messiah": {"author": "Frank Herbert", "year": 1969},
+        "The Hobbit": {"author": "J.R.R. Tolkien", "year": 1937},
+    }
 
     monkeypatch.setattr("builtins.input", lambda _: "dune")
 
@@ -137,7 +137,7 @@ def test_search_books_partial_match(monkeypatch, capsys):
 
 def test_search_books_not_found(monkeypatch, capsys):
     """Test search with no matching titles displays clear notification."""
-    library = [("Dune", "Frank Herbert", 1965)]
+    library = {"Dune": {"author": "Frank Herbert", "year": 1965}}
 
     monkeypatch.setattr("builtins.input", lambda _: "Foundation")
 
@@ -149,7 +149,7 @@ def test_search_books_not_found(monkeypatch, capsys):
 
 def test_search_books_empty_library(capsys):
     """Test searching an empty library alerts the user immediately."""
-    library = []
+    library = {}
 
     search_books(library)
 
