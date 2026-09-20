@@ -1,235 +1,154 @@
 # virtual environment
 # multiple projects -> different versions of libraries
 import pytest
-from ASG02 import view_books, add_or_update_book, remove_book, search_books, show_author_statistics, load_library, save_library
+from ASG02 import LibraryManager
 
 
-def test_view_books_empty(capsys):
-    """Test viewing an empty library shows the correct message."""
-    library = {}
-    view_books(library)
-    captured = capsys.readouterr()
-    assert "Your library is empty." in captured.out
+def test_add_book_new(tmp_path):
+    """Test adding a brand new book returns 'added' and stores correct attributes."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    status = manager.add_or_update_book("Dune", "Frank Herbert", 1965)
 
+    assert status == "added"
+    assert "Dune" in manager.books
+    assert manager.books["Dune"] == {"author": "Frank Herbert", "year": 1965}
 
-def test_view_books_sorted_and_formatted(capsys):
-    """Test books are formatted and displayed alphabetically by title from the dictionary."""
-    library = {
-        "The Hobbit": {"author": "J.R.R. Tolkien", "year": 1937},
-        "Dune": {"author": "Frank Herbert", "year": 1965},
-    }
-    view_books(library)
-    captured = capsys.readouterr()
 
-    # Dune should appear before The Hobbit due to alphabetical sorting
-    expected_dune = "1. Dune by Frank Herbert (1965)"
-    expected_hobbit = "2. The Hobbit by J.R.R. Tolkien (1937)"
+def test_add_book_update_existing(tmp_path):
+    """Test re-adding an existing title updates attributes and returns 'updated'."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    manager.add_or_update_book("Dune", "Frank Herbert", 1965)
+    status = manager.add_or_update_book("Dune", "F. Herbert", 1966)
 
-    assert expected_dune in captured.out
-    assert expected_hobbit in captured.out
-    assert captured.out.index(expected_dune) < captured.out.index(expected_hobbit)
+    assert status == "updated"
+    assert len(manager.books) == 1
+    assert manager.books["Dune"] == {"author": "F. Herbert", "year": 1966}
 
 
-def test_add_or_update_book_add_new(monkeypatch, capsys):
-    """Test adding a new book inserts it into the dictionary and reports added."""
-    library = {}
+def test_remove_book_success(tmp_path):
+    """Test removing an existing book returns True and deletes entry."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    manager.add_or_update_book("Dune", "Frank Herbert", 1965)
 
-    inputs = iter(["Dune", "Frank Herbert", "1965"])
-    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+    assert manager.remove_book("Dune") is True
+    assert "Dune" not in manager.books
 
-    add_or_update_book(library)
 
-    assert "Dune" in library
-    assert library["Dune"] == {"author": "Frank Herbert", "year": 1965}
+def test_remove_book_case_insensitive(tmp_path):
+    """Test removing a book with mismatched casing still deletes entry."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    manager.add_or_update_book("Dune Messiah", "Frank Herbert", 1969)
 
-    captured = capsys.readouterr()
-    assert '"Dune" was added.' in captured.out
+    assert manager.remove_book("dune messiah") is True
+    assert "Dune Messiah" not in manager.books
 
 
-def test_add_or_update_book_update_existing(monkeypatch, capsys):
-    """Test entering an existing title updates its details and reports updated."""
-    library = {"Dune": {"author": "Frank Herbert", "year": 1965}}
+def test_remove_book_not_found(tmp_path):
+    """Test attempting to remove a missing title returns False without modifying data."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    manager.add_or_update_book("Dune", "Frank Herbert", 1965)
 
-    # Provide updated author/year for the existing title
-    inputs = iter(["Dune", "F. Herbert", "1966"])
-    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+    assert manager.remove_book("Foundation") is False
+    assert len(manager.books) == 1
 
-    add_or_update_book(library)
 
-    assert len(library) == 1
-    assert library["Dune"] == {"author": "F. Herbert", "year": 1966}
+def test_get_all_books_empty(tmp_path):
+    """Test get_all_books returns an empty list when library has no entries."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    assert manager.get_all_books() == []
 
-    captured = capsys.readouterr()
-    assert '"Dune" was updated.' in captured.out
 
+def test_get_all_books_sorted_tuples(tmp_path):
+    """Test get_all_books returns alphabetical (title, author, year) tuples."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    manager.add_or_update_book("The Hobbit", "J.R.R. Tolkien", 1937)
+    manager.add_or_update_book("Dune", "Frank Herbert", 1965)
+    manager.add_or_update_book("Dune Messiah", "Frank Herbert", 1969)
 
-def test_add_or_update_book_invalid_year(monkeypatch, capsys):
-    """Test entering non-numeric year rejects input without altering the dictionary."""
-    library = {}
+    books = manager.get_all_books()
+    expected = [
+        ("Dune", "Frank Herbert", 1965),
+        ("Dune Messiah", "Frank Herbert", 1969),
+        ("The Hobbit", "J.R.R. Tolkien", 1937),
+    ]
+    assert books == expected
 
-    inputs = iter(["1984", "George Orwell", "nineteen-eighty-four"])
-    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
 
-    add_or_update_book(library)
+def test_search_books_partial_match(tmp_path):
+    """Test search_books performs case-insensitive substring matching."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    manager.add_or_update_book("Dune", "Frank Herbert", 1965)
+    manager.add_or_update_book("Dune Messiah", "Frank Herbert", 1969)
+    manager.add_or_update_book("The Hobbit", "J.R.R. Tolkien", 1937)
 
-    assert len(library) == 0
-    captured = capsys.readouterr()
-    assert "Year must be a valid integer." in captured.out
+    matches = manager.search_books("dune")
+    expected = [
+        ("Dune", "Frank Herbert", 1965),
+        ("Dune Messiah", "Frank Herbert", 1969),
+    ]
+    assert matches == expected
 
 
-def test_remove_book_success(monkeypatch, capsys):
-    """Test removing a book deletes its key from the dictionary."""
-    library = {"Dune": {"author": "Frank Herbert", "year": 1965}}
+def test_search_books_no_match(tmp_path):
+    """Test search_books returns empty list when no matches exist."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    manager.add_or_update_book("Dune", "Frank Herbert", 1965)
+    assert manager.search_books("xyz") == []
 
-    monkeypatch.setattr("builtins.input", lambda _: "Dune")
 
-    remove_book(library)
+def test_get_author_statistics_empty(tmp_path):
+    """Test author statistics on empty library returns empty list."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    assert manager.get_author_statistics() == []
 
-    assert "Dune" not in library
-    assert len(library) == 0
 
-    captured = capsys.readouterr()
-    assert "'Dune' has been removed from your library." in captured.out
+def test_get_author_statistics_dynamic_count(tmp_path):
+    """Test author statistics returns correct counts sorted by author name."""
+    manager = LibraryManager(filename=str(tmp_path / "test.json"))
+    manager.add_or_update_book("Dune", "Frank Herbert", 1965)
+    manager.add_or_update_book("Dune Messiah", "Frank Herbert", 1969)
+    manager.add_or_update_book("The Hobbit", "J.R.R. Tolkien", 1937)
 
+    stats = manager.get_author_statistics()
+    expected = [
+        ("Frank Herbert", 2),
+        ("J.R.R. Tolkien", 1),
+    ]
+    assert stats == expected
 
-def test_remove_book_not_found(monkeypatch, capsys):
-    """Test attempting to remove a non-existent title leaves the dictionary unchanged."""
-    library = {"Dune": {"author": "Frank Herbert", "year": 1965}}
 
-    monkeypatch.setattr("builtins.input", lambda _: "Foundation")
+def test_load_nonexistent_file(tmp_path):
+    """Test initializing manager with missing file starts with empty dict without crashing."""
+    fake_path = tmp_path / "missing.json"
+    manager = LibraryManager(filename=str(fake_path))
+    assert manager.books == {}
 
-    remove_book(library)
 
-    assert "Dune" in library
-    assert len(library) == 1
+def test_load_corrupted_json(tmp_path):
+    """Test initializing with malformed JSON degrades gracefully to empty library."""
+    bad_file = tmp_path / "corrupt.json"
+    bad_file.write_text("{invalid_json: true", encoding="utf-8")
 
-    captured = capsys.readouterr()
-    assert "'Foundation' was not found in the library." in captured.out
+    manager = LibraryManager(filename=str(bad_file))
+    assert manager.books == {}
 
 
-def test_remove_book_empty_library(capsys):
-    """Test removing from an empty library alerts the user immediately without prompting."""
-    library = {}
+def test_load_non_dictionary_json(tmp_path):
+    """Test loading valid JSON that is a list instead of a dict falls back to empty dict."""
+    list_file = tmp_path / "list_data.json"
+    list_file.write_text('["Dune", "Frank Herbert", 1965]', encoding="utf-8")
 
-    remove_book(library)
+    manager = LibraryManager(filename=str(list_file))
+    assert manager.books == {}
 
-    captured = capsys.readouterr()
-    assert "Your library is empty. Nothing to remove." in captured.out
 
+def test_save_and_reload_persistence(tmp_path):
+    """Test round-trip save and reload preserves book attributes."""
+    file_path = str(tmp_path / "shelf.json")
+    manager = LibraryManager(filename=file_path)
+    manager.add_or_update_book("1984", "George Orwell", 1949)
+    manager.save_library()
 
-def test_search_books_partial_match(monkeypatch, capsys):
-    """Test case-insensitive partial matching across dictionary keys."""
-    library = {
-        "Dune": {"author": "Frank Herbert", "year": 1965},
-        "Dune Messiah": {"author": "Frank Herbert", "year": 1969},
-        "The Hobbit": {"author": "J.R.R. Tolkien", "year": 1937},
-    }
-
-    monkeypatch.setattr("builtins.input", lambda _: "dune")
-
-    search_books(library)
-
-    captured = capsys.readouterr()
-    assert "1. Dune by Frank Herbert (1965)" in captured.out
-    assert "2. Dune Messiah by Frank Herbert (1969)" in captured.out
-    assert "The Hobbit" not in captured.out
-
-
-def test_search_books_not_found(monkeypatch, capsys):
-    """Test search with no matching titles displays clear notification."""
-    library = {"Dune": {"author": "Frank Herbert", "year": 1965}}
-
-    monkeypatch.setattr("builtins.input", lambda _: "Foundation")
-
-    search_books(library)
-
-    captured = capsys.readouterr()
-    assert "No books found matching 'foundation'." in captured.out
-
-
-def test_search_books_empty_library(capsys):
-    """Test searching an empty library alerts the user immediately."""
-    library = {}
-
-    search_books(library)
-
-    captured = capsys.readouterr()
-    assert "Your library is empty." in captured.out
-
-
-def test_show_author_statistics_empty(capsys):
-    """Test showing author statistics on an empty library outputs the empty message."""
-    library = {}
-    show_author_statistics(library)
-    captured = capsys.readouterr()
-    assert "Your library is empty." in captured.out
-
-
-def test_show_author_statistics_counts_and_sorting(capsys):
-    """Test authors are counted accurately and sorted alphabetically with proper pluralization."""
-    library = {
-        "Dune": {"author": "Frank Herbert", "year": 1965},
-        "Dune Messiah": {"author": "Frank Herbert", "year": 1969},
-        "The Hobbit": {"author": "J.R.R. Tolkien", "year": 1937},
-    }
-    show_author_statistics(library)
-    captured = capsys.readouterr()
-
-    expected_herbert = "Frank Herbert: 2 books"
-    expected_tolkien = "J.R.R. Tolkien: 1 book"
-
-    assert expected_herbert in captured.out
-    assert expected_tolkien in captured.out
-    # Frank Herbert should appear before J.R.R. Tolkien alphabetically
-    assert captured.out.index(expected_herbert) < captured.out.index(
-        expected_tolkien
-    )
-
-
-def test_load_library_file_not_found(tmp_path):
-    """Test loading from a non-existent path returns an empty dictionary without crashing."""
-    fake_path = tmp_path / "non_existent.json"
-    result = load_library(str(fake_path))
-    assert result == {}
-
-
-def test_load_library_corrupted_json(tmp_path, capsys):
-    """Test loading corrupted/invalid JSON falls back gracefully to an empty dictionary."""
-    corrupt_file = tmp_path / "corrupt.json"
-    corrupt_file.write_text("{this is not valid json")
-
-    result = load_library(str(corrupt_file))
-    assert result == {}
-
-    captured = capsys.readouterr()
-    assert "Warning: Could not read" in captured.out
-
-
-def test_save_library_creates_valid_json(tmp_path):
-    """Test save_library properly serializes dictionary data into a readable JSON file."""
-    library_data = {
-        "Dune": {"author": "Frank Herbert", "year": 1965}
-    }
-    file_path = tmp_path / "saved_library.json"
-
-    save_library(library_data, str(file_path))
-
-    # Verify the file was created and contains valid data
-    assert file_path.exists()
-    loaded_data = load_library(str(file_path))
-    assert loaded_data == library_data
-
-
-def test_persistence_roundtrip(tmp_path):
-    """Test saving and then re-loading data preserves the exact structure and values."""
-    file_path = tmp_path / "test_shelf.json"
-    sample_data = {
-        "1984": {"author": "George Orwell", "year": 1949},
-        "Foundation": {"author": "Isaac Asimov", "year": 1951},
-    }
-
-    save_library(sample_data, str(file_path))
-    restored = load_library(str(file_path))
-
-    assert restored == sample_data
-    assert restored["1984"]["year"] == 1949
+    new_manager = LibraryManager(filename=file_path)
+    assert "1984" in new_manager.books
+    assert new_manager.books["1984"]["year"] == 1949
