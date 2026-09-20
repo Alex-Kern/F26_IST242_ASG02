@@ -1,7 +1,7 @@
 # virtual environment
 # multiple projects -> different versions of libraries
 import pytest
-from ASG02 import view_books, add_or_update_book, remove_book, search_books
+from ASG02 import view_books, add_or_update_book, remove_book, search_books, show_author_statistics
 
 
 def test_view_books_empty(capsys):
@@ -155,3 +155,32 @@ def test_search_books_empty_library(capsys):
 
     captured = capsys.readouterr()
     assert "Your library is empty." in captured.out
+
+
+def test_show_author_statistics_empty(capsys):
+    """Test showing author statistics on an empty library outputs the empty message."""
+    library = {}
+    show_author_statistics(library)
+    captured = capsys.readouterr()
+    assert "Your library is empty." in captured.out
+
+
+def test_show_author_statistics_counts_and_sorting(capsys):
+    """Test authors are counted accurately and sorted alphabetically with proper pluralization."""
+    library = {
+        "Dune": {"author": "Frank Herbert", "year": 1965},
+        "Dune Messiah": {"author": "Frank Herbert", "year": 1969},
+        "The Hobbit": {"author": "J.R.R. Tolkien", "year": 1937},
+    }
+    show_author_statistics(library)
+    captured = capsys.readouterr()
+
+    expected_herbert = "Frank Herbert: 2 books"
+    expected_tolkien = "J.R.R. Tolkien: 1 book"
+
+    assert expected_herbert in captured.out
+    assert expected_tolkien in captured.out
+    # Frank Herbert should appear before J.R.R. Tolkien alphabetically
+    assert captured.out.index(expected_herbert) < captured.out.index(
+        expected_tolkien
+    )
