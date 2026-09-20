@@ -29,17 +29,22 @@ class LibraryManager:
         return False
 
     def get_all_books(self):
-        """Returns list of (title, info_dict) sorted alphabetically by title."""
-        return sorted(self.books.items(), key=lambda item: item[0].lower())
+        """Returns all books as (title, author, year) tuples sorted alphabetically by title."""
+        sorted_keys = sorted(self.books.keys(), key=lambda t: t.lower())
+        return [
+            (title, self.books[title]["author"], self.books[title]["year"])
+            for title in sorted_keys
+        ]
 
     def search_books(self, keyword: str):
-        """Returns list of (title, info_dict) matching keyword case-insensitively."""
+        """Returns matching books as (title, author, year) tuples by partial title match."""
         keyword = keyword.lower()
-        return [
-            (title, info)
+        matches = [
+            (title, info["author"], info["year"])
             for title, info in self.books.items()
             if keyword in title.lower()
         ]
+        return sorted(matches, key=lambda item: item[0].lower())
 
     def get_author_statistics(self):
         """Calculates book count per author, sorted alphabetically."""
@@ -72,6 +77,12 @@ class LibraryManager:
             print(f"Error: Failed to save library data: {e}")
 
 
+def render_book_list(books):
+    """Displays a list of (title, author, year) tuples with 1-based indexing."""
+    for index, (title, author, year) in enumerate(books, start=1):
+        print(f"{index}. {title} by {author} ({year})")
+
+
 # --- CLI Presentation Layer ---
 
 def display_menu():
@@ -98,8 +109,7 @@ def main():
                 print("Your library is empty.")
             else:
                 print("--- Books in Library ---")
-                for index, (title, info) in enumerate(books, start=1):
-                    print(f"{index}. {title} by {info['author']} ({info['year']})")
+                render_book_list(books)
 
         elif choice == "2":
             title = input("Title: ").strip()
@@ -135,6 +145,18 @@ def main():
             if not manager.books:
                 print("Your library is empty.")
                 continue
+
+            keyword = input("Enter search term: ").strip()
+            if not keyword:
+                print("Search term cannot be empty.")
+                continue
+
+            matches = manager.search_books(keyword)
+            if matches:
+                print("--- Matching Books ---")
+                render_book_list(matches)
+            else:
+                print(f"No books found matching '{keyword}'.")
 
             keyword = input("Enter search term: ").strip()
             if not keyword:
