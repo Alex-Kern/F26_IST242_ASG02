@@ -55,10 +55,20 @@ class LibraryManager:
         return sorted(counts.items())
 
     def load_library(self):
-        """Loads data from JSON file into self.books."""
+        """Loads data from JSON file into self.books with dictionary shape validation."""
         if not os.path.exists(self.filename):
             self.books = {}
             return
+
+        try:
+            with open(self.filename, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    self.books = data
+                else:
+                    self.books = {}
+        except (json.JSONDecodeError, OSError):
+            self.books = {}
 
         try:
             with open(self.filename, "r", encoding="utf-8") as f:
@@ -98,6 +108,11 @@ def display_menu():
 
 def main():
     manager = LibraryManager("library_data.json")
+    
+    # Report initial load status with correct singular/plural phrasing
+    count = len(manager.books)
+    unit = "book" if count == 1 else "books"
+    print(f"Loaded {count} {unit} from {manager.filename}.")
 
     while True:
         display_menu()
