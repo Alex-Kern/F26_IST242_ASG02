@@ -1,4 +1,5 @@
-
+import json
+import os
 
 def display_menu():
     """Displays the main menu options for the Personal Library Manager."""
@@ -8,7 +9,7 @@ def display_menu():
     print("3. Remove a book")
     print("4. Search for a book")
     print("5. Show author statistics")
-    print("6. Exit")
+    print("6. Save and exit")
 
 
 def view_books(library):
@@ -114,13 +115,39 @@ def show_author_statistics(library):
         print(f"{author}: {count} {unit}")
 
 
+def load_library(filename="library_data.json"):
+    """Loads library data from a JSON file.
+    Returns an empty dict if the file is missing or corrupted.
+    """
+    if not os.path.exists(filename):
+        return {}
+
+    try:
+        with open(filename, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        print(f"Warning: Could not read '{filename}'. Starting with an empty library.")
+        return {}
+
+
+def save_library(library, filename="library_data.json"):
+    """Saves library dictionary to a JSON file."""
+    try:
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(library, f, indent=4)
+        print(f"Library successfully saved to '{filename}'.")
+    except OSError as e:
+        print(f"Error: Failed to save library data: {e}")
+
+
 def main():
     """Orchestrates the interactive menu loop for Layer 3."""
-    library = {}  # Nested dictionary
+    filename = "library_data.json"
+    library = load_library(filename)
 
     while True:
         display_menu()
-        choice = input("\nEnter your choice (1-5): ").strip()
+        choice = input("\nEnter your choice (1-6): ").strip()
 
         if choice == "1":
             view_books(library)
@@ -133,11 +160,11 @@ def main():
         elif choice == "5":
             show_author_statistics(library)
         elif choice == "6":
+            save_library(library, filename)
             print("Exiting Personal Library Manager. Goodbye!")
             break
         else:
             print("Invalid choice. Please choose a number between 1 and 6.")
-
 
 if __name__ == "__main__":
     main()
